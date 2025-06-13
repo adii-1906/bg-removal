@@ -49,6 +49,24 @@ const AppContextProvider = (props) => {
       setResultImage(false);
       navigate("/result");
 
+      const token = await getToken()
+
+      const formData = new FormData()
+      image && formData.append('image', image)
+
+      const {data} = await axios.post(backendUrl+'/api/image/remove-bg', formData, {headers:{token}})
+
+      if (data.success) {
+        setResultImage(data.resultImage)
+        data.creditBalance && setCredit(data.creditBalance)
+      }else{
+        toast.error(data.message)
+        data.creditBalance && setCredit(data.creditBalance)
+        if(data.creditBalance === 0){
+          navigate('/buy')
+        }
+      }
+
       console.log(image)
     } catch (error) {
       console.log("API Error:", error);
@@ -64,6 +82,7 @@ const AppContextProvider = (props) => {
     image,
     setImage,
     removeBg,
+    resultImage,setResultImage
   };
 
   return (

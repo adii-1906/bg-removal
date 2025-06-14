@@ -21,9 +21,22 @@ const BuyCredit = () => {
       name: 'Credit Purchase',
       description: 'Buying credits',
       order_id: order.id,
-      handler: function (response) {
+      handler: async (response) => {
         console.log('Payment successful:', response);
-        toast.success("Payment successful!");
+        const token = await getToken()
+
+        try {
+          const{data} = await axios.post(backendUrl+'/api/user/verify-razor', response, {headers:{token}})
+          if (data.success) {
+            loadCreditsData()
+            navigate('/')
+            toast.success("Credit added!");
+          }
+        } catch (error) {
+          console.log(error);
+          toast.error(error.message)
+          
+        }
       },
       prefill: {
         name: "Aditi Priya",

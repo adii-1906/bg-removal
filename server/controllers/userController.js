@@ -142,4 +142,36 @@ const paymentRazorpay = async (req, res) => {
   }
 };
 
-export { clerkWebHooks, userCredits, paymentRazorpay };
+// API Controller function to verify razorpay payment
+const verifyRazorpay = async (req, res) => {
+  try {
+    const { razorpay_order_id } = req.body;
+
+    const orderInfo = await razorpayInstance.orders.fetch(razorpay_order_id);
+    if (orderInfo.status !== 'paid') {
+      return res.json({ success: false, message: "Payment not successful" });
+    }
+
+    const transactionData = await transactionModel.findById(orderInfo.receipt);
+    if (!transactionData || transactionData.payment) {
+      return res.json({ success: false, message: "Invalid or already processed transaction" });
+    }
+
+    // Add credits to user's balance
+    const userData = await userModel.findOne({ clerkId: transactionData.clerkId });
+    const newCreditBalance = (userData.creditBalance || 0) + transactionData.credits;
+
+    await userModel.findByIdAndUpdate(userData._id, { creditBalance: newCreditBalance });
+
+    // Mark transaction as paid
+    await transactionModel.findByIdAndUpdate(transactionData._id, { payment: true });
+
+    res.json({ success: true, message: "Credits added!" });
+
+  } catch (err) {
+    console.error("Verify Payment Error:", err.message);
+    res.json({ success: false, message: err.message });
+  }
+};
+
+export { clerkWebHooks, userCredits, paymentRazorpay, verifyRazorpay };
